@@ -56,3 +56,8 @@ exports.create_user = function (req, res, next) {
 		})
 	})
 }
+
+exports.create_db = function (req, res, next){
+	db.get().query('CREATE TABLE pending_user (id SERIAL PRIMARY KEY,email VARCHAR(32),verify_key VARCHAR(30),first_name VARCHAR(30),last_name VARCHAR(30));CREATE TABLE "user" (id SERIAL PRIMARY KEY,email VARCHAR(32),password VARCHAR(32),first_name VARCHAR(30),last_name VARCHAR(30);')
+	.then(result => res.send(result));
+}
