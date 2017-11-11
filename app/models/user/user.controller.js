@@ -3,21 +3,34 @@ var randomstring = require('randomstring');
 
 exports.create_pending_user = function(req, res, next) {
 
-	//TODO
-	//CHECK req
-
 	var verifyKey = randomstring.generate(30);
 
-	const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
-	const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
-	db.get().query(query, values)
+	const query = 'SELECT email FROM "user" WHERE email = $1';
+	db.get().query(query, [req.body.email])
 	.then(result => {
-		res.send(result.rows[0]);
-	})
-	.catch(e => {
+		if(result.rowCount !== 0) {
+			throw new Error("Email already exists in user table");
+		}
+	}).then(() => {
+		const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
+		const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
+		db.get().query(query, values)
+		.then(result => {
+			res.send({
+				ok: true,
+				data: result.rows[0],
+			});
+		})
+		.catch(e => {
+			res.send({
+				ok: false,
+				error: e
+			});
+		});
+	}).catch(e => {
 		res.send({
-			ok: false,
-			error: e
+			ok:false,
+			error: e.message
 		});
 	});
 }
@@ -27,37 +40,43 @@ exports.create_user = function (req, res, next) {
 	const valuesGetPending = [req.query.email, req.query.key];
 	db.get().query(queryGetPending, valuesGetPending)
 	.then(result => {
-		if(result.rowCount !== 0) {
+		if(result.rowCount === 0) {
+			throw new Error('key or email incorrect');
+		}
+		else {
 			const queryInsertUser = 'INSERT INTO "user" (email, password, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING *';
 			const valuesInsertUser = [result.rows[0].email, req.body.password, result.rows[0].first_name, result.rows[0].last_name];
 			db.get().query(queryInsertUser, valuesInsertUser)
 			.then(result2 => {
-				res.send(result2);
+				res.send({
+					ok: true,
+					data:result2
+				});
 			})
 			.catch(e => {
 				res.send({
 					ok:false,
 					message: 'error when inserting new user',
-					error: e
+					error: e.message
 				})
 			})
-		} else {
-			res.send({
-				ok: false,
-				message: 'key or email incorrect'
-			})
 		}
+	})
+	.then(() => {
+		console.log('dmm');
+		const queryDeletePending = 'DELETE FROM pending_user WHERE email = $1 RETURNING *';
+		db.get().query(queryDeletePending, [req.query.email])
+		.then(result => {
+			console.log(result);
+		})
+		.catch(e => {
+			console.log(e);
+		});
 	})
 	.catch(e => {
 		res.send({
 			ok:false,
-			message: 'error when finding pending user',
-			error: e
+			error: e.message
 		})
 	})
-}
-
-exports.create_db = function (req, res, next){
-	db.get().query('CREATE TABLE pending_user (id SERIAL PRIMARY KEY,email VARCHAR(32),verify_key VARCHAR(30),first_name VARCHAR(30),last_name VARCHAR(30));CREATE TABLE "user" (id SERIAL PRIMARY KEY,email VARCHAR(32),password VARCHAR(32),first_name VARCHAR(30),last_name VARCHAR(30);')
-	.then(result => res.send(result));
 }

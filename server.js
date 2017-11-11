@@ -14,7 +14,7 @@ var port = process.env.PORT || 3001;
 
 var db = require('./db');
 
-db.connect('mode', function(err) {
+db.connect('heroku', function(err) {
 	if (err) {
 		console.log('Unable to connect to database ');
 		process.exit(1)
