@@ -6,6 +6,8 @@ var bodyParser = require('body-parser');
 
 var app = express();
 var cors = require('cors');
+require('dotenv').config();
+
 
 //Port
 var port = process.env.PORT || 3001;
@@ -14,7 +16,7 @@ var port = process.env.PORT || 3001;
 
 var db = require('./db');
 
-db.connect('heroku', function(err) {
+db.connect('localhost', function(err) {
 	if (err) {
 		console.log('Unable to connect to database ');
 		process.exit(1)
@@ -36,8 +38,5 @@ apiRoutes.use('/user', require('./app/models/user/user.route'));
 
 // apply the routes to our application with the prefix /api
 app.use('/api', apiRoutes);
-
-//Set app running in port
-
 
 module.exports = app;
