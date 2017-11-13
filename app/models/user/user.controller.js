@@ -21,7 +21,9 @@ exports.create_pending_user = function(req, res, next) {
 		});
 	});
 }
+   
 
+    zxc   
 exports.create_user = function (req, res, next) {
 	const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1 AND verify_key = $2';
 	const valuesGetPending = [req.query.email, req.query.key];
@@ -55,9 +57,4 @@ exports.create_user = function (req, res, next) {
 			error: e
 		})
 	})
-}
-
-exports.create_db = function (req, res, next){
-	db.get().query('CREATE TABLE pending_user (id SERIAL PRIMARY KEY,email VARCHAR(32),verify_key VARCHAR(30),first_name VARCHAR(30),last_name VARCHAR(30));CREATE TABLE "user" (id SERIAL PRIMARY KEY,email VARCHAR(32),password VARCHAR(32),first_name VARCHAR(30),last_name VARCHAR(30);')
-	.then(result => res.send(result));
 }
