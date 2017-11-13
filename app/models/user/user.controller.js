@@ -95,17 +95,14 @@ exports.login = function(req, res, next) {
 	db.get().query(query, values)
 	.then(result => {	
 		bcrypt.compare(req.body.password, result.rows[0].password)
-		.then((err, isMatch) => {
-			if (err) {
-				throw new Error('err');
-			}
+		.then((isMatch) => {
 			if (!isMatch) {
 				throw new Error('password mismatch');
 			} else {
 				res.send({
 					ok: true,
-					id: result.id,
-					email: result.email
+					id: result.rows[0].id,
+					email: result.rows[0].email
 				})
 			}
 		})
