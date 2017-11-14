@@ -4,6 +4,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 
+
 var app = express();
 var cors = require('cors');
 require('dotenv').config();
@@ -16,7 +17,7 @@ var port = process.env.PORT || 3001;
 
 var db = require('./db');
 
-db.connect('localhost', function(err) {
+db.connect('heroku', function(err) {
 	if (err) {
 		console.log('Unable to connect to database ');
 		process.exit(1)
