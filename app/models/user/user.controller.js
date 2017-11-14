@@ -77,7 +77,7 @@ exports.create_user = function (req, res, next) {
 	.then(result => {
 		res.send({
 			ok: true,
-			message: 'User ' + result[0].email + ' has been verified'
+			message: 'User ' + result[0].first_name + ' ' + result[0].last_name + ' has been verified'
 		})
 	})
 	.catch(e => {
@@ -116,4 +116,57 @@ exports.login = function(req, res, next) {
 			error: e.message
 		});
 	});
+}
+
+exports.change_password = function(req, res, next) {
+	var user = null;
+	var hash = null;
+	function havePassword(newPass, oldPass){
+		return new Promise((resolve, reject) => {
+			if(!oldPass || !newPass) {
+				throw new Error('old or new password were not set');
+			} else {
+				resolve('ok');
+			}
+		});
+	}
+	havePassword(req.body.newPassword, req.body.password)
+	.then(()=>{
+		return db.get().query('SELECT email, password FROM "user" WHERE "email" = $1', [req.body.email]);
+		console.log(req.body.email);
+	})
+	.then(result => {
+		if(result.length === 0){
+			throw new Error('Invalid user credentials');
+		}
+		user = result;
+		return bcrypt.compare(req.body.password, result[0].password);
+	})
+	.then(isMatch => {
+		if (!isMatch) {
+			throw new Error('password mismatch');
+		}
+	})
+	.then(() => {
+		return bcrypt.hash(req.body.newPassword, 8)
+	})
+	.then(hashed => {
+		hash = hashed;
+	})
+	.then(result => {
+		return db.get().one('UPDATE "user" SET password = $1 WHERE email = $2 RETURNING *', [hash, user[0].email])
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			message: 'Password updated'
+		})
+	})
+	.catch(e => {
+		console.log(e);
+		res.send({
+			ok:false,
+			error: e.message
+		})
+	})
 }
