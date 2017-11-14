@@ -52,7 +52,7 @@ exports.create_user = function (req, res, next) {
 		hash = hashed;
 	})
 	.then(() => {
-		const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1';
+		const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1 AND verify_key=$2';
 		const valuesGetPending = [req.query.email, req.query.key];
 		return db.get().any(queryGetPending, valuesGetPending)
 	})
