@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 
 var app = express();
 var cors = require('cors');
+var helmet = require('helmet');
 require('dotenv').config();
 
 
@@ -16,6 +17,9 @@ var port = process.env.PORT || 3001;
 //Database
 
 var db = require('./db');
+app.use(cors());
+app.use(helmet());
+
 
 db.connect('heroku', function(err) {
 	if (err) {
