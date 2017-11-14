@@ -1,6 +1,9 @@
 var db = require('../../../db');
 var randomstring = require('randomstring');
 var bcrypt = require('bcrypt');
+var Promise = require("bluebird");
+
+
 
 exports.create_pending_user = function(req, res, next) {
 
@@ -9,26 +12,23 @@ exports.create_pending_user = function(req, res, next) {
 	const query = 'SELECT email FROM "user" WHERE email = $1';
 	db.get().query(query, [req.body.email])
 	.then(result => {
-		if(result.rowCount !== 0) {
+		if(result.length !== 0) {
+			console.log(result);
 			throw new Error("Email already exists in user table");
 		}
-	}).then(() => {
+	})
+	.then(() => {
 		const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
 		const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
-		db.get().query(query, values)
-		.then(result => {
-			res.send({
-				ok: true,
-				data: result.rows[0],
-			});
-		})
-		.catch(e => {
-			res.send({
-				ok: false,
-				error: e
-			});
+		return db.get().query(query, values);
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			data: result,
 		});
-	}).catch(e => {
+	})
+	.catch(e => {
 		res.send({
 			ok:false,
 			error: e.message
@@ -92,28 +92,25 @@ exports.create_user = function (req, res, next) {
 exports.login = function(req, res, next) {
 	const query = 'SELECT * FROM "user" WHERE "email" = $1';
 	const values = [req.body.email];
-	db.get().query(query, values)
-	.then(result => {	
-		bcrypt.compare(req.body.password, result.rows[0].password)
-		.then((isMatch) => {
-			if (!isMatch) {
-				throw new Error('password mismatch');
-			} else {
-				res.send({
-					ok: true,
-					id: result.rows[0].id,
-					email: result.rows[0].email
-				})
-			}
-		})
-		.catch(e => {
+	var user = null;
+	db.get().one(query, values)
+	.then(result => {
+		user = result;
+		return bcrypt.compare(req.body.password, result.password);
+	})
+	.then((isMatch) => {
+		if (!isMatch) {
+			throw new Error('password mismatch');
+		} else {
 			res.send({
-				ok:false,
-				error: e.message
+				ok: true,
+				id: user.id,
+				email: user.email
 			})
-		});
+		}
 	})
 	.catch(e => {
+		console.log(e);
 		res.send({
 			ok: false,
 			error: e.message
