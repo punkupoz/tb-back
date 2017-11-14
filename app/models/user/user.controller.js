@@ -1,7 +1,9 @@
-var db = require('../../../db');
-var randomstring = require('randomstring');
-var bcrypt = require('bcrypt');
-var Promise = require("bluebird");
+const db = require('../../../db');
+const randomstring = require('randomstring');
+const bcrypt = require('bcrypt');
+const Promise = require("bluebird");
+const options = require('../../nodemailer/options');
+const transporter = require('../../nodemailer/transporter');
 
 exports.create_pending_user = function(req, res, next) {
 	var verifyKey = randomstring.generate(30);
@@ -19,6 +21,7 @@ exports.create_pending_user = function(req, res, next) {
 		return db.get().query(query, values);
 	})
 	.then(result => {
+		transporter.send(options.verify(req, req.body.email, verifyKey));
 		res.send({
 			ok: true,
 			data: result,
