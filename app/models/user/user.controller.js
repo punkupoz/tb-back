@@ -1,34 +1,33 @@
-var db = require('../../../db');
-var randomstring = require('randomstring');
-var bcrypt = require('bcrypt');
+const db = require('../../../db');
+const randomstring = require('randomstring');
+const bcrypt = require('bcrypt');
+const Promise = require("bluebird");
+const options = require('../../nodemailer/options');
+const transporter = require('../../nodemailer/transporter');
 
 exports.create_pending_user = function(req, res, next) {
-
 	var verifyKey = randomstring.generate(30);
-
 	const query = 'SELECT email FROM "user" WHERE email = $1';
 	db.get().query(query, [req.body.email])
 	.then(result => {
-		if(result.rowCount !== 0) {
+		if(result.length !== 0) {
+			console.log(result);
 			throw new Error("Email already exists in user table");
 		}
-	}).then(() => {
+	})
+	.then(() => {
 		const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
 		const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
-		db.get().query(query, values)
-		.then(result => {
-			res.send({
-				ok: true,
-				data: result.rows[0],
-			});
-		})
-		.catch(e => {
-			res.send({
-				ok: false,
-				error: e
-			});
+		return db.get().query(query, values);
+	})
+	.then(result => {
+		transporter.send(options.verify(req, req.body.email, verifyKey));
+		res.send({
+			ok: true,
+			data: result,
 		});
-	}).catch(e => {
+	})
+	.catch(e => {
 		res.send({
 			ok:false,
 			error: e.message
@@ -37,53 +36,58 @@ exports.create_pending_user = function(req, res, next) {
 }
 
 exports.create_user = function (req, res, next) {
+	var hash;
+	function havePassword(pass){
+		return new Promise((resolve, reject) => {
+			if(!pass) {
+				throw new Error('no password provided');
+			} else {
+				resolve('ok');
+			}
+		});
+	}
 
-	bcrypt.hash(req.body.password, 8)
-	.then((hash)=>{
-		const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1 AND verify_key = $2';
+	havePassword(req.body.password)
+	.then(() => {
+		return bcrypt.hash(req.body.password, 8)
+	})
+	.then(hashed => {
+		hash = hashed;
+	})
+	.then(() => {
+		const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1 AND verify_key=$2';
 		const valuesGetPending = [req.query.email, req.query.key];
-		db.get().query(queryGetPending, valuesGetPending)
-		.then(result => {
-			if(result.rowCount === 0) {
-				throw new Error('key or email incorrect');
-			}
-			else {
-				const queryInsertUser = 'INSERT INTO "user" (email, password, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING *';
-				const valuesInsertUser = [result.rows[0].email, hash, result.rows[0].first_name, result.rows[0].last_name];
-				db.get().query(queryInsertUser, valuesInsertUser)
-				.then(result2 => {
-					res.send({
-						ok: true,
-						data:result2
-					});
-				})
-				.catch(e => {
-					res.send({
-						ok:false,
-						message: 'error when inserting new user',
-						error: e.message
-					})
-				})
-			}
-		})
-		.then(() => {
+		return db.get().any(queryGetPending, valuesGetPending)
+	})
+	.then((result) => {
+		if(result.length === 0) {
+			throw new Error('key or email incorrect');
+		}
+		else{
+			return result;
+		}
+	})
+	.then(result => {
+		return db.get().tx(t => {
+			const queryInsertUser = 'INSERT INTO "user" (email, password, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING *';
+			const valuesInsertUser = [result[0].email, hash, result[0].first_name, result[0].last_name];
+			const insertUser = db.get().one(queryInsertUser, valuesInsertUser);
 			const queryDeletePending = 'DELETE FROM pending_user WHERE email = $1';
-			db.get().query(queryDeletePending, [req.query.email])
-			.catch(e => {
-				console.log(e);
-			});
+			const deletePendingUser = db.get().none(queryDeletePending, [req.query.email]);
+			return t.batch([insertUser, deletePendingUser]);
 		})
-		.catch(e => {
-			res.send({
-				ok:false,
-				error: e.message
-			})
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			message: 'User ' + result[0].first_name + ' ' + result[0].last_name + ' has been verified'
 		})
 	})
 	.catch(e => {
+		console.log(e);
 		res.send({
 			ok: false,
-			error: e.message
+			message: e.message
 		});
 	});
 }
@@ -91,36 +95,86 @@ exports.create_user = function (req, res, next) {
 exports.login = function(req, res, next) {
 	const query = 'SELECT * FROM "user" WHERE "email" = $1';
 	const values = [req.body.email];
-	db.get().query(query, values)
-	.then(result => {	
-		bcrypt.compare(req.body.password, result.rows[0].password)
-		.then((isMatch) => {
-			if (!isMatch) {
-				throw new Error('password mismatch');
-			} else {
-				var token = jwt.sign({
-					id: result.rows[0].id,
-					email: result.rows[0].email
-				}, process.env.SECRET_KEY, {
-					expiresIn: 86400
-				});
-				res.send({
-					ok: true,
-					token: token
-				})
-			}
-		})
-		.catch(e => {
+	var user = null;
+	db.get().one(query, values)
+	.then(result => {
+		user = result;
+		return bcrypt.compare(req.body.password, result.password);
+	})
+	.then((isMatch) => {
+		if (!isMatch) {
+			throw new Error('password mismatch');
+		} else {
+			var token = jwt.sign({
+				id: result.rows[0].id,
+				email: result.rows[0].email
+			}, process.env.SECRET_KEY, {
+				expiresIn: 86400
+			});
 			res.send({
-				ok:false,
-				error: e.message
+				ok: true,
+				token: token
 			})
-		});
+		}
 	})
 	.catch(e => {
+		console.log(e);
 		res.send({
 			ok: false,
 			error: e.message
 		});
 	});
+}
+
+exports.change_password = function(req, res, next) {
+	var user = null;
+	var hash = null;
+	function havePassword(newPass, oldPass){
+		return new Promise((resolve, reject) => {
+			if(!oldPass || !newPass) {
+				throw new Error('old or new password were not set');
+			} else {
+				resolve('ok');
+			}
+		});
+	}
+	havePassword(req.body.newPassword, req.body.password)
+	.then(()=>{
+		return db.get().query('SELECT email, password FROM "user" WHERE "email" = $1', [req.body.email]);
+		console.log(req.body.email);
+	})
+	.then(result => {
+		if(result.length === 0){
+			throw new Error('Invalid user credentials');
+		}
+		user = result;
+		return bcrypt.compare(req.body.password, result[0].password);
+	})
+	.then(isMatch => {
+		if (!isMatch) {
+			throw new Error('password mismatch');
+		}
+	})
+	.then(() => {
+		return bcrypt.hash(req.body.newPassword, 8)
+	})
+	.then(hashed => {
+		hash = hashed;
+	})
+	.then(result => {
+		return db.get().one('UPDATE "user" SET password = $1 WHERE email = $2 RETURNING *', [hash, user[0].email])
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			message: 'Password updated'
+		})
+	})
+	.catch(e => {
+		console.log(e);
+		res.send({
+			ok:false,
+			error: e.message
+		})
+	})
 }
