@@ -2,11 +2,11 @@ const nodemailer = require('nodemailer');
 
 
 const transporter = nodemailer.createTransport({
- service: 'gmail',
- auth: {
-        user: 'palapunkupoz@gmail.com',
-        pass: 'dafuqdude11'
-    }
+	service: 'Gmail',
+	auth: {
+		user: 'palapunkupoz@gmail.com',
+		pass: 'dafuqdude11'
+	}
 });
 
 exports.send = option => {
