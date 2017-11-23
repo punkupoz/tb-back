@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var app = express();
 var cors = require('cors');
 var helmet = require('helmet');
+var jwtpath = require('./jwtpath');
 require('dotenv').config();
 
 
@@ -35,6 +36,10 @@ db.connect('localhost', function(err) {
 //Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(function(req, res, next){
+	jwtpath.prohibited(req, res, next);
+});
+
 
 //API ROUTES
 var apiRoutes = express.Router(); 
