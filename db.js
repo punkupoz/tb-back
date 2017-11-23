@@ -19,7 +19,7 @@ exports.connect = function(mode, done) {
 	if(mode == "localhost") {
 		state.cn = pgp({
 			user: 'postgres',
-			host: 'localhost',
+			host: '127.0.0.1',
 			database: 'test',
 			password: 'dafuqdude11',
 			port: 5432,

@@ -10,3 +10,16 @@ exports.verify = function(req, email, key){
 		`
 	}
 }
+
+exports.password_change = function(req, email, key){
+	return {
+		from: 'palapunkupoz@gmail.com',
+		to: email,
+		subject: 'Verifying account',
+		html: `
+		</p>
+		Your account ${email} password has been changed.
+		</p>
+		`
+	}
+}

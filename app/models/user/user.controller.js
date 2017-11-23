@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const Promise = require("bluebird");
 const options = require('../../nodemailer/options');
 const transporter = require('../../nodemailer/transporter');
+const jwt = require('jsonwebtoken');
 
 exports.create_pending_user = function(req, res, next) {
 	var verifyKey = randomstring.generate(30);
@@ -28,6 +29,7 @@ exports.create_pending_user = function(req, res, next) {
 		});
 	})
 	.catch(e => {
+		console.log(e);
 		res.send({
 			ok:false,
 			error: e.message
@@ -87,7 +89,7 @@ exports.create_user = function (req, res, next) {
 		console.log(e);
 		res.send({
 			ok: false,
-			message: e.message
+			error: e.message
 		});
 	});
 }
@@ -106,8 +108,8 @@ exports.login = function(req, res, next) {
 			throw new Error('password mismatch');
 		} else {
 			var token = jwt.sign({
-				id: result.rows[0].id,
-				email: result.rows[0].email
+				id: user.id,
+				email: user.email
 			}, process.env.SECRET_KEY, {
 				expiresIn: 86400
 			});
@@ -138,10 +140,11 @@ exports.change_password = function(req, res, next) {
 			}
 		});
 	}
+
 	havePassword(req.body.newPassword, req.body.password)
 	.then(()=>{
-		return db.get().query('SELECT email, password FROM "user" WHERE "email" = $1', [req.body.email]);
-		console.log(req.body.email);
+		return db.get().query('SELECT email, password FROM "user" WHERE "email" = $1', [req.decoded.email]);
+		console.log(req.decoded.email);
 	})
 	.then(result => {
 		if(result.length === 0){
@@ -165,6 +168,7 @@ exports.change_password = function(req, res, next) {
 		return db.get().one('UPDATE "user" SET password = $1 WHERE email = $2 RETURNING *', [hash, user[0].email])
 	})
 	.then(result => {
+		transporter.send(options.password_change(req, user[0].email, null));
 		res.send({
 			ok: true,
 			message: 'Password updated'
@@ -178,3 +182,21 @@ exports.change_password = function(req, res, next) {
 		})
 	})
 }
+
+//input: user email
+//output: email and verify key
+
+exports.resend_email = function(req, res, next) {
+	db.get().one('SELECT email, verify_key FROM "user" WHERE email = $1', [req.body.email])
+	.then(result => {
+		transporter.send(options.verify(req, result.email, result.verify_key));
+	})
+	.catch(e => {
+		res.send({
+			ok: false,
+			error: e
+		})
+	})
+}
+
+exports.change_email = function()

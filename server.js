@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var app = express();
 var cors = require('cors');
 var helmet = require('helmet');
+var jwtpath = require('./jwtpath');
 require('dotenv').config();
 
 
@@ -21,7 +22,7 @@ app.use(cors());
 app.use(helmet());
 
 
-db.connect('heroku', function(err) {
+db.connect('localhost', function(err) {
 	if (err) {
 		console.log('Unable to connect to database ');
 		process.exit(1)
@@ -35,6 +36,10 @@ db.connect('heroku', function(err) {
 //Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use(function(req, res, next){
+	jwtpath.prohibited(req, res, next);
+});
+
 
 //API ROUTES
 var apiRoutes = express.Router(); 
