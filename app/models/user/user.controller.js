@@ -114,6 +114,7 @@ exports.login = function(req, res, next) {
 			});
 			res.send({
 				ok: true,
+				firstName: user.first_name,
 				token: token
 			})
 		}
@@ -125,6 +126,37 @@ exports.login = function(req, res, next) {
 			error: e.message
 		});
 	});
+}
+
+//in: email
+//out: email
+
+exports.forgot_password = function(req, res, next) {
+	var rPassword = randomstring.generate(15);
+	db.get().oneOrNone('SELECT user_id FROM "user_email" WHERE address = $1', [req.body.email])
+	.then(result => {
+		if(!result){
+			throw new Error("Email cannot be found");
+		}
+		bcrypt.hash(rPassword, 8)
+		.then(result => {
+			return db.get().none('UPDATE "user" SET password = $1', [result]);
+		})
+	})
+	.then(result => {
+		transporter.send(options.forgot_password(req, req.body.email, rPassword));
+		res.send({
+			ok:true,
+			message: 'New password has been sent to your email'
+		})
+	})
+	.catch(e => {
+		console.log(e);
+		res.send({
+			ok:false,
+			error: e.message
+		})
+	})
 }
 
 exports.change_password = function(req, res, next) {
@@ -145,7 +177,7 @@ exports.change_password = function(req, res, next) {
 		return db.get().oneOrNone('SELECT user_id FROM user_email WHERE email = $1', [req.decoded.email]);
 	})
 	.then(result => {
-			return db.get().one('SELECT password FROM "user" WHERE id = $1', [result.user_id]);
+		return db.get().one('SELECT password FROM "user" WHERE id = $1', [result.user_id]);
 	})
 	.then(result => {
 		user = result;
@@ -181,9 +213,6 @@ exports.change_password = function(req, res, next) {
 	})
 }
 
-//input: user email
-//output: email and verify key
-
 exports.resend_email = function(req, res, next) {
 	var email;
 	db.get().oneOrNone('SELECT * FROM "pending_user" WHERE email = $1', [req.body.email])
@@ -205,5 +234,8 @@ exports.resend_email = function(req, res, next) {
 		})
 	})
 }
+
+//input: email, temp_key
+//output: email change
 
 // exports.change_email = function()

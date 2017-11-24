@@ -52,3 +52,16 @@ exports.password_change = function(req, email, key){
 		`
 	}
 }
+
+exports.forgot_password = function(req, email, password){
+	return {
+		from: 'palapunkupoz@gmail.com',
+		to: email,
+		subject: 'Your new fucking password is here',
+		html: `
+		</p>
+		Your account ${email} password is ${password}.
+		</p>
+		`
+	}
+}

@@ -8,5 +8,6 @@ router.post('/verify', user.create_user);
 router.post('/login', user.login);
 router.post('/changepassword', user.change_password);
 router.post('/resendemail', user.resend_email);
+router.post('/forgot', user.forgot_password);
 
 module.exports = router;

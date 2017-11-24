@@ -1,6 +1,6 @@
 var jwt = require('jsonwebtoken');
 
-const notRequired = ['/api/user/register', '/api/user/verify', '/api/user/login', '/api/user/resendemail'];
+const notRequired = ['/api/user/register', '/api/user/verify', '/api/user/login', '/api/user/resendemail', '/api/user/forgot'];
 
 exports.prohibited = function(req, res, next) {
 	for (var i = 0; i < notRequired.length; i++) {
