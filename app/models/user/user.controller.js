@@ -140,7 +140,7 @@ exports.change_password = function(req, res, next) {
 		});
 	}
 
-	havePassword(req.body.newPassword, req.body.password)
+	havePassword(req.body.new_password, req.body.password)
 	.then(() => {
 		return db.get().oneOrNone('SELECT user_id FROM user_email WHERE email = $1', [req.decoded.email]);
 	})
@@ -157,7 +157,7 @@ exports.change_password = function(req, res, next) {
 		}
 	})
 	.then(() => {
-		return bcrypt.hash(req.body.newPassword, 8)
+		return bcrypt.hash(req.body.new_password, 8)
 	})
 	.then(hashed => {
 		hash = hashed;
@@ -188,7 +188,7 @@ exports.change_password = function(req, res, next) {
 // 	var email;
 // 	db.get().one('SELECT id FROM "user_email" WHERE address = $1', [req.body.email]).
 // 	.then(result => {
-		
+
 // 	})
 // 	.then(result => {
 // 		transporter.send(options.verify(req, result.email, result.verify_key));
