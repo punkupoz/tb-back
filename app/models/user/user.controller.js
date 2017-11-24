@@ -184,21 +184,18 @@ exports.change_password = function(req, res, next) {
 //input: user email
 //output: email and verify key
 
-// exports.resend_email = function(req, res, next) {
-// 	var email;
-// 	db.get().one('SELECT id FROM "user_email" WHERE address = $1', [req.body.email]).
-// 	.then(result => {
-
-// 	})
-// 	.then(result => {
-// 		transporter.send(options.verify(req, result.email, result.verify_key));
-// 	})
-// 	.catch(e => {
-// 		res.send({
-// 			ok: false,
-// 			error: e
-// 		})
-// 	})
-// }
+exports.resend_email = function(req, res, next) {
+	var email;
+	db.get().oneOrNone('SELECT * FROM "pending_user" WHERE email = $1', [req.body.email])
+	.then(result => {
+		transporter.send(options.verify(req, result.email, result.verify_key));
+	})
+	.catch(e => {
+		res.send({
+			ok: false,
+			error: e
+		})
+	})
+}
 
 // exports.change_email = function()

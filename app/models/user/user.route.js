@@ -7,5 +7,6 @@ router.post('/register', user.create_pending_user);
 router.post('/verify', user.create_user);
 router.post('/login', user.login);
 router.post('/changepassword', user.change_password);
+router.post('/resendemail', user.resend_email);
 
 module.exports = router;
