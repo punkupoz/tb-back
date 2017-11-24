@@ -34,8 +34,8 @@ exports.verify = function(req, email, key){
 			</a>
 		<p style="margin: 3rem 0">Kimi no (koe) key: ${key}</p>
 		<br/>
-		<p> Happy Shinobu :3 </p>
-		<img src="https://appmedia.jp/wp-content/uploads/2017/08/9b6e9135627ef4fc16375e01e290ca49.jpg"/>
+		<p> Panaino :3</p>
+		<img src="https://pa1.narvii.com/6077/1834ab152f446f537cfb4541cf047f70b6816431_hq.gif"/>
 		`
 	}
 }
