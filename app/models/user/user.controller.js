@@ -16,18 +16,18 @@ exports.create_pending_user = function(req, res, next) {
 			throw new Error("Email already exists");
 		}
 	})
- 	.then(() => {
- 		const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
- 		const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
- 		return db.get().query(query, values);
- 	})
- 	.then(result => {
- 		transporter.send(options.verify(req, req.body.email, verifyKey));
- 		res.send({
- 			ok: true,
- 			message: 'Pending user ' + req.body.first_name + ' ' + req.body.last_name + ' has been created'
- 		});
- 	})
+	.then(() => {
+		const query = 'INSERT INTO pending_user (email, last_name, first_name, verify_key) VALUES ($1, $2, $3, $4) RETURNING *';
+		const values = [req.body.email, req.body.last_name, req.body.first_name, verifyKey];
+		return db.get().query(query, values);
+	})
+	.then(result => {
+		transporter.send(options.verify(req, req.body.email, verifyKey));
+		res.send({
+			ok: true,
+			message: 'Pending user ' + req.body.first_name + ' ' + req.body.last_name + ' has been created'
+		});
+	})
 	.catch(e => {
 		console.log(e);
 		res.send({
@@ -59,10 +59,10 @@ exports.create_user = function (req, res, next) {
 	.then(() => {
 		const queryGetPending = 'SELECT * FROM "pending_user" WHERE email = $1 AND verify_key=$2';
 		const valuesGetPending = [req.query.email, req.query.key];
-		return db.get().one(queryGetPending, valuesGetPending)
+		return db.get().oneOrNone(queryGetPending, valuesGetPending)
 	})
 	.then((result) => {
-		if(result.length === 0) {
+		if(!result) {
 			throw new Error('Key or email incorrect');
 		}
 		else{
@@ -91,8 +91,11 @@ exports.login = function(req, res, next) {
 	const query = 'SELECT * FROM "user_email" WHERE "address" = $1';
 	const values = [req.body.email];
 	var user = null;
-	db.get().one(query, values)
+	db.get().oneOrNone(query, values)
 	.then(result => {
+		if(!result) {
+			throw new Error('Email or password incorrect')
+		}
 		return db.get().one('SELECT * FROM "user" WHERE id = $1', [result.user_id]);
 	})
 	.then(result => {
@@ -101,7 +104,7 @@ exports.login = function(req, res, next) {
 	})
 	.then((isMatch) => {
 		if (!isMatch) {
-			throw new Error('password mismatch');
+			throw new Error('Email or password incorrect');
 		} else {
 			var token = jwt.sign({
 				id: user.id,
@@ -138,20 +141,19 @@ exports.change_password = function(req, res, next) {
 	}
 
 	havePassword(req.body.newPassword, req.body.password)
-	.then(()=>{
-		return db.get().query('SELECT email, password FROM "user" WHERE "email" = $1', [req.decoded.email]);
-		console.log(req.decoded.email);
+	.then(() => {
+		return db.get().oneOrNone('SELECT user_id FROM user_email WHERE email = $1', [req.decoded.email]);
 	})
 	.then(result => {
-		if(result.length === 0){
-			throw new Error('Invalid user credentials');
-		}
+			return db.get().one('SELECT password FROM "user" WHERE id = $1', [result.user_id]);
+	})
+	.then(result => {
 		user = result;
-		return bcrypt.compare(req.body.password, result[0].password);
+		return bcrypt.compare(req.body.password, result.password);
 	})
 	.then(isMatch => {
 		if (!isMatch) {
-			throw new Error('password mismatch');
+			throw new Error('Email or password incorrect');
 		}
 	})
 	.then(() => {
@@ -182,17 +184,21 @@ exports.change_password = function(req, res, next) {
 //input: user email
 //output: email and verify key
 
-exports.resend_email = function(req, res, next) {
-	db.get().one('SELECT email, verify_key FROM "user" WHERE email = $1', [req.body.email])
-	.then(result => {
-		transporter.send(options.verify(req, result.email, result.verify_key));
-	})
-	.catch(e => {
-		res.send({
-			ok: false,
-			error: e
-		})
-	})
-}
+// exports.resend_email = function(req, res, next) {
+// 	var email;
+// 	db.get().one('SELECT id FROM "user_email" WHERE address = $1', [req.body.email]).
+// 	.then(result => {
+		
+// 	})
+// 	.then(result => {
+// 		transporter.send(options.verify(req, result.email, result.verify_key));
+// 	})
+// 	.catch(e => {
+// 		res.send({
+// 			ok: false,
+// 			error: e
+// 		})
+// 	})
+// }
 
 // exports.change_email = function()
