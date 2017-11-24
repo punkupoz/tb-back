@@ -1,13 +1,12 @@
 var jwt = require('jsonwebtoken');
 
-const notRequired = ['/api/user/register', '/api/user/verify', '/api/user/login'];
+const notRequired = ['/api/user/register', '/api/user/verify', '/api/user/login', '/api/user/resendemail'];
 
 exports.prohibited = function(req, res, next) {
 	for (var i = 0; i < notRequired.length; i++) {
 		if(req.path === notRequired[i]) {
 			return next();
 		}
-		console.log(req.path+' wat ' + notRequired)
 	}
 	
 	// check header or url parameters or post parameters for token
@@ -30,7 +29,7 @@ exports.prohibited = function(req, res, next) {
 		// return an error
 		return res.status(403).send({ 
 			success: false, 
-			message: 'No token provided.' 
+			error: 'No token provided.' 
 		});
 	}
 }

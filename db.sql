@@ -34,7 +34,7 @@ CREATE TABLE phone (
 );
 
 DROP FUNCTION new_user(TEXT, TEXT, TEXT, TEXT);
-CREATE FUNCTION new_user (firstname TEXT, lastname TEXT, email TEXT, password TEXT) RETURNS TABLE(fn TEXT, ln TEXT) AS
+CREATE FUNCTION new_user (firstname TEXT, lastname TEXT, pemail TEXT, password TEXT) RETURNS TABLE(fn TEXT, ln TEXT) AS
 $BODY$
 DECLARE
 	u_id integer;
@@ -43,7 +43,8 @@ BEGIN
 	VALUES (firstname, lastname, password)
 	RETURNING id INTO u_id;
 
-	INSERT INTO user_email (user_id, address) VALUES (u_id, email);
+	DELETE FROM "pending_user" WHERE "email" = pemail;
+	INSERT INTO user_email (user_id, address) VALUES (u_id, pemail);
 	RETURN QUERY 
 		SELECT first_name, last_name
 		FROM "user"

@@ -188,12 +188,20 @@ exports.resend_email = function(req, res, next) {
 	var email;
 	db.get().oneOrNone('SELECT * FROM "pending_user" WHERE email = $1', [req.body.email])
 	.then(result => {
+		if(!result) {
+			throw new Error('Email cannot be found');
+		}
 		transporter.send(options.verify(req, result.email, result.verify_key));
+		res.send({
+			ok: true,
+			message: "Email is sent"
+		})
 	})
 	.catch(e => {
+		console.log(e);
 		res.send({
 			ok: false,
-			error: e
+			error: e.message
 		})
 	})
 }
