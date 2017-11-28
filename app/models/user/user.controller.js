@@ -140,7 +140,7 @@ exports.get_info = function(req, res, next) {
 	.then(result => {
 		res.send({
 			ok: true,
-			message: "User data has been returned"
+			message: "User data has been returned",
 			data: {
 				first_name: user.first_name,
 				last_name: user.last_name,
@@ -277,7 +277,7 @@ exports.deleteall = function(req, res, next) {
 	.then(() => {
 		db.get().query('DELETE FROM pending_user;');
 		res.send({
-			deleted: "lol";
+			deleted: "lol"
 		})
 	})
 	.catch(e => {
