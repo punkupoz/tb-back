@@ -22,7 +22,7 @@ app.use(cors());
 app.use(helmet());
 
 
-db.connect('localhost', function(err) {
+db.connect('heroku', function(err) {
 	if (err) {
 		console.log('Unable to connect to database ');
 		process.exit(1)
