@@ -106,9 +106,9 @@ exports.login = function(req, res, next) {
 		if (!isMatch) {
 			throw new Error('Email or password incorrect');
 		} else {
+			console.log(user);
 			var token = jwt.sign({
 				id: user.id,
-				email: user.email
 			}, process.env.SECRET_KEY, {
 				expiresIn: 86400
 			});
@@ -126,6 +126,33 @@ exports.login = function(req, res, next) {
 			error: e.message
 		});
 	});
+}
+
+exports.get_info = function(req, res, next) {
+	var user = null;
+
+	db.get().oneOrNone('SELECT first_name, last_name FROM "user" WHERE id = $1', [req.decoded.id])
+	.then(result => {
+		user = result;
+		return db.get().query('SELECT address, "primary" FROM "user_email" WHERE "user_id" = $1', [req.decoded.id]);
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			message: {
+				first_name: user.first_name,
+				last_name: user.last_name,
+				email: result
+			}
+		})
+	})
+	.catch(e => {
+		console.log(e);
+		res.send({
+			ok:false,
+			error: e.message
+		})
+	})
 }
 
 //in: email

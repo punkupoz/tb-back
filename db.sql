@@ -33,6 +33,27 @@ CREATE TABLE phone (
 	FOREIGN KEY(user_id) REFERENCES pending_user(id)
 );
 
+DROP TABLE IF EXISTS "bank" (
+	id SERIAL PRIMARY KEY,
+	name TEXT NOT NULL,
+	image TEXT
+)
+
+DROP TABLE IF EXISTS account;
+CREATE TABLE "account" (
+	id SERIAL PRIMARY KEY,
+	user_id BIGINT,
+	bank_id BIGINT,
+	account_number TEXT,
+	balance REAL
+	FOREIGN KEY (user_id) REFERENCES "user"(id),
+	FOREIGN KEY (bank_id) REFERENCES bank(id),
+);
+
+CREATE UNIQUE INDEX bank_account ON "account" (user_id, bank_id);
+
+
+
 DROP FUNCTION new_user(TEXT, TEXT, TEXT, TEXT);
 CREATE FUNCTION new_user (firstname TEXT, lastname TEXT, pemail TEXT, password TEXT) RETURNS TABLE(fn TEXT, ln TEXT) AS
 $BODY$
@@ -53,4 +74,6 @@ END;
 $BODY$
 LANGUAGE plpgsql VOLATILE;
 
-SELECT * FROM new_user('pun', 'punlast', 'punmailz', 'abcabc');
+DELETE FROM user_email;
+DELETE FROM "user";
+DELETE FROM pending_user;
