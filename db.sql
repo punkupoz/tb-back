@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS frequent_transaction (
 	FOREIGN KEY(account_id) REFERENCES account(id);
 );
 
+
+DROP FUNCTION new_user(TEXT, TEXT, TEXT, TEXT);
 CREATE FUNCTION new_user (firstname TEXT, lastname TEXT, pemail TEXT, password TEXT) RETURNS TABLE(fn TEXT, ln TEXT) AS
 $BODY$
 DECLARE
@@ -101,4 +103,6 @@ END;
 $BODY$
 LANGUAGE plpgsql VOLATILE;
 
-SELECT * FROM new_user('pun', 'punlast', 'punmailz', 'abcabc');
+DELETE FROM user_email;
+DELETE FROM "user";
+DELETE FROM pending_user;

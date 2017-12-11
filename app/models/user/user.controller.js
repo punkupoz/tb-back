@@ -25,7 +25,8 @@ exports.create_pending_user = function(req, res, next) {
 		transporter.send(options.verify(req, req.body.email, verifyKey));
 		res.send({
 			ok: true,
-			message: 'Pending user ' + req.body.first_name + ' ' + req.body.last_name + ' has been created'
+			message: 'Pending user ' + req.body.first_name + ' ' + req.body.last_name + ' has been created',
+			data: req.body.email
 		});
 	})
 	.catch(e => {
@@ -106,9 +107,9 @@ exports.login = function(req, res, next) {
 		if (!isMatch) {
 			throw new Error('Email or password incorrect');
 		} else {
+			console.log(user);
 			var token = jwt.sign({
 				id: user.id,
-				email: user.email
 			}, process.env.SECRET_KEY, {
 				expiresIn: 86400
 			});
@@ -126,6 +127,34 @@ exports.login = function(req, res, next) {
 			error: e.message
 		});
 	});
+}
+
+exports.get_info = function(req, res, next) {
+	var user = null;
+
+	db.get().oneOrNone('SELECT first_name, last_name FROM "user" WHERE id = $1', [req.decoded.id])
+	.then(result => {
+		user = result;
+		return db.get().query('SELECT address, "primary" FROM "user_email" WHERE "user_id" = $1', [req.decoded.id]);
+	})
+	.then(result => {
+		res.send({
+			ok: true,
+			message: "User data has been returned",
+			data: {
+				first_name: user.first_name,
+				last_name: user.last_name,
+				email: result
+			}
+		})
+	})
+	.catch(e => {
+		console.log(e);
+		res.send({
+			ok:false,
+			error: e.message
+		})
+	})
 }
 
 //in: email
@@ -239,3 +268,22 @@ exports.resend_email = function(req, res, next) {
 //output: email change
 
 // exports.change_email = function()
+
+exports.deleteall = function(req, res, next) {
+	db.get().query('DELETE FROM user_email;')
+	.then(() => {
+		db.get().query('DELETE FROM "user";');
+	})
+	.then(() => {
+		db.get().query('DELETE FROM pending_user;');
+		res.send({
+			deleted: "lol"
+		})
+	})
+	.catch(e => {
+		res.send({
+			ok: false,
+			error: e.message
+		})
+	})
+}
