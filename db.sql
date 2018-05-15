@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS pending_user CASCADE;
 DROP TABLE IF EXISTS "user" CASCADE;
 DROP TABLE IF EXISTS user_email;
 DROP TABLE IF EXISTS phone;
-DROP TABLE IF EXISTS branch;
+DROP TABLE IF EXISTS bank;
 DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS frequent_transaction;
 DROP FUNCTION IF EXISTS new_user(TEXT, TEXT, TEXT, TEXT);
@@ -38,27 +38,23 @@ CREATE TABLE IF NOT EXISTS phone (
 	FOREIGN KEY(user_id) REFERENCES pending_user(id)
 );
 
-CREATE TABLE IF NOT EXISTS branch (
+CREATE TABLE IF NOT EXISTS bank (
 	bsb INT PRIMARY KEY,
 	name INT NOT NULL,
-	postcode INT NOT NULL,
-	city INT NOT NULL,
-	street_number INT NOT NULL,
-	street TEXT NOT NULL,
-	state VARCHAR(3) NOT NULL
+	code TEXT NOT NULL
 )
 
 CREATE TABLE IF NOT EXISTS "account" (
 	id SERIAL PRIMARY KEY,
 	available_fund REAL,
-	branch_bsb BIGINT,
+	bank_bsb BIGINT,
 	user_id BIGINT,
 	balance REAL
-	FOREIGN KEY(branch_bsb) REFERENCES branch(bsb),
+	FOREIGN KEY(bank_bsb) REFERENCES bank(bsb),
 	FOREIGN KEY(user_id) REFERENCES "user"(id),
 );
 
-CREATE UNIQUE INDEX account_userbranch ON "account"(branch_bsb, user_id);
+CREATE UNIQUE INDEX account_userbank ON "account"(bank_bsb, user_id);
 
 CREATE TYPE transactions_type AS ENUM ('frequent', 'oneoff');
 
