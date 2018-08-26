@@ -2,7 +2,7 @@ exports.verify = function(req, email, key){
 	return {
 		from: 'palapunkupoz@gmail.com',
 		to: email,
-		subject: 'Verifying account',
+		subject: 'Tracebucks: Verifying account',
 		html: `
 		<a	href="${'https://tracebucks.herokuapp.com/user/verify/verify?key=' + key + '&email=' + email}"
 				style="
@@ -41,7 +41,7 @@ exports.password_change = function(req, email, key){
 	return {
 		from: 'palapunkupoz@gmail.com',
 		to: email,
-		subject: 'Verifying account',
+		subject: 'Tracebuck: password change',
 		html: `
 		</p>
 		Your account ${email} password has been changed.
@@ -54,10 +54,11 @@ exports.forgot_password = function(req, email, password){
 	return {
 		from: 'palapunkupoz@gmail.com',
 		to: email,
-		subject: 'Your new fucking password is here',
+		subject: 'Tracebucks: Your new password is here',
 		html: `
 		</p>
-		Your account ${email} password is ${password}.
+		Your account ${email} new password is ${password}.
+		Please change your password after logging in.
 		</p>
 		`
 	}
